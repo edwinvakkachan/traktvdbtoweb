@@ -1,138 +1,189 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trakt Review Dashboard</title>
-
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-  </script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trakt Review Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+<body class="bg-gray-100 dark:bg-gray-950">
 
-  <!-- Header -->
-  <div class="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
-    <h1 class="text-xl font-semibold">🎬 Trakt Review Queue</h1>
+<div class="max-w-7xl mx-auto p-6">
 
-    <button onclick="toggleDark()"
-      class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
-      Toggle Theme
+<!-- ===== STATS ===== -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="stats"></div>
+
+<!-- ===== TABLE ===== -->
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden">
+
+<div class="p-4 flex justify-between items-center border-b dark:border-gray-800">
+  <div class="flex gap-3">
+    <button onclick="bulkComplete()"
+      class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">
+      Bulk Complete
     </button>
   </div>
 
-  <!-- Filters -->
-  <div class="p-4 bg-white dark:bg-gray-800 shadow mt-4 mx-4 rounded-xl">
-    <div class="flex flex-col md:flex-row gap-4 md:items-center justify-between">
-
-      <input id="search"
-        placeholder="Search title..."
-        class="w-full md:w-1/3 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700" />
-
-      <select id="filterType"
-        class="px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700">
-        <option value="all">All</option>
-        <option value="movie">Movies</option>
-        <option value="show">Shows</option>
-      </select>
-
-    </div>
+  <div>
+    <input id="search" placeholder="Search..."
+      class="px-3 py-2 border rounded-lg text-sm">
   </div>
+</div>
 
-  <!-- Table -->
-  <div class="p-4 mx-4">
-    <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl shadow">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-200 dark:bg-gray-700 text-left">
-          <tr>
-            <th class="p-3">Title</th>
-            <th class="p-3">Year</th>
-            <th class="p-3">Type</th>
-            <th class="p-3">Created</th>
-            <th class="p-3 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
+<table class="min-w-full text-sm">
+<thead class="bg-gray-50 dark:bg-gray-800 text-left">
+<tr>
+<th class="px-4 py-3">
+  <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
+</th>
+<th class="px-4 py-3 cursor-pointer" onclick="sortBy('title')">Title</th>
+<th class="px-4 py-3 cursor-pointer" onclick="sortBy('year')">Year</th>
+<th class="px-4 py-3 cursor-pointer" onclick="sortBy('type')">Type</th>
+<th class="px-4 py-3 cursor-pointer" onclick="sortBy('created_at')">Created</th>
+<th class="px-4 py-3 text-right">Actions</th>
+</tr>
+</thead>
 
-  <script>
-    let items = [];
+<tbody id="tbody"></tbody>
+</table>
 
-    async function load() {
-      const res = await fetch('/api/pending');
-      items = await res.json();
-      render();
-    }
+<div class="flex justify-between items-center p-4 border-t dark:border-gray-800">
+<button onclick="prevPage()" class="px-3 py-1 border rounded">Prev</button>
+<span id="pageInfo"></span>
+<button onclick="nextPage()" class="px-3 py-1 border rounded">Next</button>
+</div>
 
-    function render() {
-      const search = document.getElementById('search').value.toLowerCase();
-      const typeFilter = document.getElementById('filterType').value;
+</div>
+</div>
 
-      const filtered = items.filter(item => {
-        const matchesSearch = item.title.toLowerCase().includes(search);
-        const matchesType = typeFilter === 'all' || item.type === typeFilter;
-        return matchesSearch && matchesType;
-      });
+<!-- Toast -->
+<div id="toast"
+class="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg opacity-0 transition">
+</div>
 
-      const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = '';
+<script>
+let page = 1;
+let totalPages = 1;
+let limit = 10;
+let sort = "created_at";
+let order = "DESC";
+let selected = [];
 
-      filtered.forEach(item => {
-        tbody.innerHTML += `
-          <tr class="border-t dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-            <td class="p-3 font-medium">${item.title}</td>
-            <td class="p-3">${item.year || '-'}</td>
-            <td class="p-3">
-              <span class="px-2 py-1 text-xs rounded-full
-                ${item.type === 'movie'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'}">
-                ${item.type}
-              </span>
-            </td>
-            <td class="p-3 text-xs">${new Date(item.created_at).toLocaleString()}</td>
-            <td class="p-3 text-center space-x-2">
-              <button onclick="complete(${item.id})"
-                class="px-3 py-1 text-xs bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">
-                ✔ Complete
-              </button>
-              <button onclick="ignore(${item.id})"
-                class="px-3 py-1 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600">
-                ✖ Ignore
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-    }
+async function load() {
+  const search = document.getElementById("search").value;
 
-    async function complete(id) {
-      await fetch(`/api/complete/${id}`, { method: 'PATCH' });
-      load();
-    }
+  const res = await fetch(
+    `/api/items?page=${page}&limit=${limit}&search=${search}&sort=${sort}&order=${order}`
+  );
+  const data = await res.json();
 
-    async function ignore(id) {
-      await fetch(`/api/ignore/${id}`, { method: 'PATCH' });
-      load();
-    }
+  totalPages = Math.ceil(data.total / limit);
+  render(data.items);
+  updatePagination();
+  loadStats();
+}
 
-    document.getElementById('search').addEventListener('input', render);
-    document.getElementById('filterType').addEventListener('change', render);
+function render(items) {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
 
-    function toggleDark() {
-      document.documentElement.classList.toggle('dark');
-    }
+  items.forEach(item => {
+    tbody.innerHTML += `
+      <tr class="border-t">
+        <td class="px-4 py-3">
+          <input type="checkbox" value="${item.id}"
+            onchange="toggleSelect(${item.id}, this)">
+        </td>
+        <td class="px-4 py-3">${item.title}</td>
+        <td class="px-4 py-3">${item.year || "-"}</td>
+        <td class="px-4 py-3">${item.type}</td>
+        <td class="px-4 py-3">${new Date(item.created_at).toLocaleString()}</td>
+        <td class="px-4 py-3 text-right">
+          <button onclick="complete(${item.id})"
+            class="text-green-600 text-sm">✔</button>
+        </td>
+      </tr>
+    `;
+  });
+}
 
-    load();
-  </script>
+async function complete(id) {
+  await fetch(`/api/complete/${id}`, { method: "PATCH" });
+  toast("Marked as completed");
+  load();
+}
 
+async function bulkComplete() {
+  if (!selected.length) return;
+  await fetch("/api/bulk-complete", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids: selected })
+  });
+  selected = [];
+  toast("Bulk completed");
+  load();
+}
+
+function toggleSelect(id, checkbox) {
+  if (checkbox.checked) selected.push(id);
+  else selected = selected.filter(i => i !== id);
+}
+
+function toggleAll(master) {
+  document.querySelectorAll("#tbody input[type=checkbox]")
+    .forEach(cb => {
+      cb.checked = master.checked;
+      toggleSelect(parseInt(cb.value), cb);
+    });
+}
+
+function sortBy(field) {
+  sort = field;
+  order = order === "ASC" ? "DESC" : "ASC";
+  load();
+}
+
+function nextPage() {
+  if (page < totalPages) page++;
+  load();
+}
+
+function prevPage() {
+  if (page > 1) page--;
+  load();
+}
+
+function updatePagination() {
+  document.getElementById("pageInfo").innerText =
+    `Page ${page} of ${totalPages}`;
+}
+
+async function loadStats() {
+  const res = await fetch("/api/stats");
+  const stats = await res.json();
+
+  document.getElementById("stats").innerHTML = `
+    <div class="bg-white p-6 rounded shadow">Pending: ${stats.pending}</div>
+    <div class="bg-white p-6 rounded shadow">Completed: ${stats.completed}</div>
+    <div class="bg-white p-6 rounded shadow">Ignored: ${stats.ignored}</div>
+  `;
+}
+
+function toast(message) {
+  const t = document.getElementById("toast");
+  t.innerText = message;
+  t.classList.remove("opacity-0");
+  setTimeout(() => t.classList.add("opacity-0"), 2000);
+}
+
+document.getElementById("search").addEventListener("input", () => {
+  page = 1;
+  load();
+});
+
+load();
+</script>
 </body>
 </html>
