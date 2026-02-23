@@ -1,9 +1,9 @@
 services:
   trakt-review:
     build: .
-    container_name: trakt_review_server
+    container_name: traktreviewserver
     ports:
-      - "3005:3000"
+      - "3005:3004"
     environment:
       - DATABASE_URL=${DATABASE_URL}
     restart: no

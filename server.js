@@ -8,6 +8,6 @@ app.use(express.static("public"));
 
 app.use("/api", reviewRoutes);
 
-app.listen(3000, () => {
+app.listen(3004, () => {
   console.log("Review server running on port 3000");
 });
