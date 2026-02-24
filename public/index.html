@@ -94,10 +94,6 @@ async function load() {
   const search = document.getElementById("search").value;
 
   const res = await fetch(`/api/pending`);
-const data = await res.json();
-totalPages = 1;
-render(data);
-return;
 
   const data = await res.json();
 
