@@ -1,38 +1,54 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trakt Review Dashboard</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+tailwind.config = {
+  darkMode: 'class'
+}
+</script>
+
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-950">
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
 
 <div class="max-w-7xl mx-auto p-6">
 
-<!-- ===== STATS ===== -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="stats"></div>
+<!-- Header -->
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold">🎬 Trakt Review Dashboard</h1>
+  <button onclick="toggleDark()"
+    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm">
+    Toggle Theme
+  </button>
+</div>
 
-<!-- ===== TABLE ===== -->
-<div class="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden">
+<!-- Stats -->
+<div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"></div>
 
-<div class="p-4 flex justify-between items-center border-b dark:border-gray-800">
-  <div class="flex gap-3">
-    <button onclick="bulkComplete()"
-      class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">
-      Bulk Complete
-    </button>
-  </div>
+<!-- Table Card -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow overflow-hidden">
 
-  <div>
-    <input id="search" placeholder="Search..."
-      class="px-3 py-2 border rounded-lg text-sm">
-  </div>
+<!-- Toolbar -->
+<div class="p-4 flex justify-between items-center border-b dark:border-gray-700">
+  <button onclick="bulkComplete()"
+    class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+    Bulk Complete
+  </button>
+
+  <input id="search"
+    placeholder="Search..."
+    class="px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600">
 </div>
 
 <table class="min-w-full text-sm">
-<thead class="bg-gray-50 dark:bg-gray-800 text-left">
+
+<thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200 uppercase text-xs">
 <tr>
 <th class="px-4 py-3">
   <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
@@ -45,10 +61,14 @@
 </tr>
 </thead>
 
-<tbody id="tbody"></tbody>
+<tbody id="tbody"
+class="divide-y divide-gray-200 dark:divide-gray-700">
+</tbody>
+
 </table>
 
-<div class="flex justify-between items-center p-4 border-t dark:border-gray-800">
+<!-- Pagination -->
+<div class="flex justify-between items-center p-4 border-t dark:border-gray-700">
 <button onclick="prevPage()" class="px-3 py-1 border rounded">Prev</button>
 <span id="pageInfo"></span>
 <button onclick="nextPage()" class="px-3 py-1 border rounded">Next</button>
@@ -59,7 +79,7 @@
 
 <!-- Toast -->
 <div id="toast"
-class="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg opacity-0 transition">
+class="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg opacity-0 transition duration-300">
 </div>
 
 <script>
@@ -76,9 +96,11 @@ async function load() {
   const res = await fetch(
     `/api/items?page=${page}&limit=${limit}&search=${search}&sort=${sort}&order=${order}`
   );
+
   const data = await res.json();
 
   totalPages = Math.ceil(data.total / limit);
+
   render(data.items);
   updatePagination();
   loadStats();
@@ -90,18 +112,20 @@ function render(items) {
 
   items.forEach(item => {
     tbody.innerHTML += `
-      <tr class="border-t">
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
         <td class="px-4 py-3">
           <input type="checkbox" value="${item.id}"
             onchange="toggleSelect(${item.id}, this)">
         </td>
-        <td class="px-4 py-3">${item.title}</td>
+        <td class="px-4 py-3 font-medium">${item.title}</td>
         <td class="px-4 py-3">${item.year || "-"}</td>
-        <td class="px-4 py-3">${item.type}</td>
-        <td class="px-4 py-3">${new Date(item.created_at).toLocaleString()}</td>
+        <td class="px-4 py-3 capitalize">${item.type}</td>
+        <td class="px-4 py-3 text-xs">${new Date(item.created_at).toLocaleString()}</td>
         <td class="px-4 py-3 text-right">
           <button onclick="complete(${item.id})"
-            class="text-green-600 text-sm">✔</button>
+            class="text-green-600 hover:text-green-800 text-sm">
+            ✔ Complete
+          </button>
         </td>
       </tr>
     `;
@@ -132,10 +156,11 @@ function toggleSelect(id, checkbox) {
 }
 
 function toggleAll(master) {
+  selected = [];
   document.querySelectorAll("#tbody input[type=checkbox]")
     .forEach(cb => {
       cb.checked = master.checked;
-      toggleSelect(parseInt(cb.value), cb);
+      if (master.checked) selected.push(parseInt(cb.value));
     });
 }
 
@@ -165,9 +190,18 @@ async function loadStats() {
   const stats = await res.json();
 
   document.getElementById("stats").innerHTML = `
-    <div class="bg-white p-6 rounded shadow">Pending: ${stats.pending}</div>
-    <div class="bg-white p-6 rounded shadow">Completed: ${stats.completed}</div>
-    <div class="bg-white p-6 rounded shadow">Ignored: ${stats.ignored}</div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+      <div class="text-sm text-gray-500">Pending</div>
+      <div class="text-2xl font-bold">${stats.pending}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+      <div class="text-sm text-gray-500">Completed</div>
+      <div class="text-2xl font-bold">${stats.completed}</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+      <div class="text-sm text-gray-500">Ignored</div>
+      <div class="text-2xl font-bold">${stats.ignored}</div>
+    </div>
   `;
 }
 
@@ -178,6 +212,10 @@ function toast(message) {
   setTimeout(() => t.classList.add("opacity-0"), 2000);
 }
 
+function toggleDark() {
+  document.documentElement.classList.toggle("dark");
+}
+
 document.getElementById("search").addEventListener("input", () => {
   page = 1;
   load();
@@ -185,5 +223,6 @@ document.getElementById("search").addEventListener("input", () => {
 
 load();
 </script>
+
 </body>
 </html>
