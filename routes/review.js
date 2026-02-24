@@ -11,7 +11,10 @@ router.get("/pending", async (req, res) => {
      ORDER BY created_at DESC`
   );
 
-  res.json(result.rows);
+  res.json({
+    items: result.rows,
+    total: result.rows.length
+  });
 });
 
 /* Mark completed */
