@@ -49,4 +49,13 @@ router.patch("/ignore/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+router.get("/all", async (req, res) => {
+  const result = await pool.query(
+    `SELECT * FROM trakt_review_queue
+     ORDER BY created_at DESC`
+  );
+
+  res.json({ items: result.rows });
+});
+
 export default router;

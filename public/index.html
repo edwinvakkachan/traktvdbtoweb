@@ -324,7 +324,7 @@ let items = [];
 
 async function loadItems() {
   try {
-    const res = await fetch("/api/pending");
+    const res = await fetch("/api/all");
     const data = await res.json();
     items = data.items;   // IMPORTANT
     render();
@@ -374,20 +374,29 @@ loadItems();
     document.getElementById("countIgnored").textContent   = items.filter(i => i.status === "ignored").length;
   }
 
- async function markStatus(ids, status) {
+async function markStatus(ids, status) {
   for (const id of ids) {
     const endpoint = status === "completed"
-      ? `/api/review/complete/${id}`
-      : `/api/review/ignore/${id}`;
+      ? `/api/complete/${id}`
+      : `/api/ignore/${id}`;
 
-    await fetch(endpoint, { method: "PATCH" });
+    const res = await fetch(endpoint, { method: "PATCH" });
+
+    console.log("PATCH:", endpoint, res.status);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Server error:", text);
+      return;
+    }
   }
 
   await loadItems();
   selected.clear();
 }
 
-  /* ── RENDER ── */
+
+/* ── RENDER ── */
   function render() {
     updateCounts();
     const filtered  = getFiltered();

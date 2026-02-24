@@ -9,7 +9,7 @@ app.use(express.static("public"));
 
 app.use("/api", reviewRoutes);
 
-app.listen(3003, () => {
+app.listen(3004, () => {
   const nowIST = new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
     dateStyle: "full",

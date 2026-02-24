@@ -3,7 +3,7 @@ services:
     build: .
     container_name: traktreviewserver
     ports:
-      - "3005:3004"
+      - "3004:3004"
     environment:
       - DATABASE_URL=${DATABASE_URL}
     restart: no
