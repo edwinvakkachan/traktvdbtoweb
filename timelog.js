@@ -1,4 +1,4 @@
-import { sendMessage } from "./telegram/sendTelegramMessage.js";
+// import { sendMessage } from "./telegram/sendTelegramMessage.js";
 
 
 
@@ -8,6 +8,6 @@ export async function log(message='⌚') {
     hour12: false
   });
 
-await sendMessage(`[${time}] ${message}`)
+// await sendMessage(`[${time}] ${message}`)
   console.log(`[${time}] ${message}`);
 }
